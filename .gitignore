@@ -1,3 +1,6 @@
 *.csv
+*.mp4
 *.pyc
-dataset/
+*.ipynb
+DATA/
+Labels/
