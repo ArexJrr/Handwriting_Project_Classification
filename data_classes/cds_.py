@@ -5,6 +5,7 @@ import os
 import torch 
 import warnings
 import re
+import datetime
 from sklearn.preprocessing import LabelEncoder
 warnings.filterwarnings("ignore", category=pd.errors.DtypeWarning)
 
@@ -12,15 +13,14 @@ warnings.filterwarnings("ignore", category=pd.errors.DtypeWarning)
 class HWDataset(Dataset):
     def __init__(self, paths, type_ds):
         self.paths = paths
-        self.paths[0] = os.path.join(os.path.dirname(__file__), '..', paths[0]) # Path Datasets
-        self.paths[1] = os.path.join(os.path.dirname(__file__), '..', paths[1]) # Path Labels 
         self.empty_subject_tasks , self.max_len_series = self.chk_csv_data(self.paths[0]) # Ritorna una lista con i soggetti failed più il numero massimo della serie
         self.list_valid_subjects = self.remove_empty_subject_tasks()
         self.list_ofsubject = self.select_sub_ds(type_ds)
         self.data_files = self.data_filecsv_path()
 
+
     def __len__(self):
-        return len(self.list_valid_subjects)
+        return len(self.list_ofsubject)  # 91 Soggetti del train 91 soggetti x 21 files 
     
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
@@ -32,24 +32,43 @@ class HWDataset(Dataset):
         list_columns_name = dataset.iloc[0]
         dataset = dataset[1:]
         dataset.columns = list_columns_name
-        dataset = dataset.iloc[:, :-2].drop(columns=['Sequence'])
+        dataset = dataset.iloc[:, :-3].drop(columns=['Sequence'])
         dataset['Phase'] = LabelEncoder().fit_transform(dataset['Phase']) # LabelEncoding 
-        # Padding 
-        # Time Series feature convertirli
-        # Normalizzazione dei dati 
-
+        dataset['Timestamp'] = dataset['Timestamp'].apply(lambda x: self.convert_timestamp(x))
+        dataset = self.padding_data(dataset)        
+        dataset = dataset.astype(float)
         item = {
             'label': torch.tensor(label, dtype=torch.long), #perché si ha compatibilità con la crossentropy loss 
             'data': torch.tensor(dataset.values, dtype=torch.float32) 
         }
         return item
 
+    def padding_data(self, df):
+        padding_rows = self.max_len_series - len(df)
+        padding_data = {}
+        for col in df.columns:
+            padding_data[col] = [-1] * padding_rows #-1 il valore di padding
+        padding_df = pd.DataFrame(padding_data)
+        df_padded = pd.concat([df, padding_df], ignore_index=True)
+        return df_padded
+
+    def convert_timestamp(self, iso_timestamp):
+        iso_timestamp = iso_timestamp.rstrip('Z')
+        decimal_pos = iso_timestamp.find('.')
+        if decimal_pos != -1 and len(iso_timestamp) - decimal_pos - 1 > 6:
+            iso_timestamp = iso_timestamp[:decimal_pos + 7]
+        dt = datetime.datetime.strptime(iso_timestamp, "%Y-%m-%dT%H:%M:%S.%f")
+        timestamp = dt.timestamp()
+        return timestamp
+
     def find_label(self, task_id, subject_code):
         csv_template_filename = f'task_{task_id}.csv'
         csv_file_path = os.path.join(self.paths[1], csv_template_filename)
         if os.path.isfile(csv_file_path):
             df = pd.read_csv(csv_file_path, sep=',')
-        else: raise Exception("Label file task_{task_id}.csv not found")
+        else: 
+            print(csv_file_path)
+            raise Exception("Label file task_{task_id}.csv not found")
         label = int(df[df.iloc[:, 0] == subject_code].iloc[:, [0,-2]].iloc[0,1])
         if label == -1 : raise Exception("Wrong label selected -1 failed task to labelfile")
         return label 
@@ -132,65 +151,3 @@ class HWDataset(Dataset):
                 if not files_in_sub_folder:
                     empty_subfs.append(sub_folder)
         return empty_subfs, max_n_records-1 # -1 perché la prima riga è la column_list
-
-
-if __name__ == '__main__':
-    dir = []
-    dir.append(os.path.join(os.path.dirname(__file__), '..', 'DATA')) # Datasets
-    dir.append(os.path.join(os.path.dirname(__file__), '..', 'Labels')) # Labels 
-    #print(dir[1])
-    # test = HWDataset(dir, 'train')
-    # list = test.getdata()
-    # print(list[0])
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    #stri_ng = "/Users/arexjr/Desktop/ML Project/HWProject/FolderPj/data_classes/../DATA/CRC_SUBJECT_032/Task14_2_11_2023_9_24_59.csv"
-    # normalized_path = os.path.normpath(stri_ng)
-    # directory, filename = os.path.split(normalized_path)
-    # subject_code_match = re.search(r'CRC_SUBJECT_(\d+)', directory)
-    # if subject_code_match:
-    #     subject_code = subject_code_match.group(1)
-    # else:
-    #     raise Exception("Problem folder name: not found CRC_SUBJECT_000 Number")
-
-    # task_id = filename.split('_')[0]
-
-
-    # if subject_code.startswith('0'):
-    #     subject_code = int(str(int(subject_code)))
-    
-    # task_id =  re.search(r'Task(\d+)', task_id)
-    # if task_id:
-    #     task_id = int(task_id.group(1))
-
-    # print(f'Codice soggetto: {subject_code}')
-    # print(f'Nome task: {task_id}')
-    
