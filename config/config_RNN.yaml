@@ -1,0 +1,33 @@
+
+data:
+  dataset: HandWriting_TS
+  data_dir: DATA/
+  label_dir: Labels/
+  pad_tr: 2048
+  train_size: 75
+  val_size: 15
+  test_size: 10
+
+training_LSTM:
+  epochs: 10
+  batch_size: 1
+  learning_rate: 0.001
+  optimizer: adam
+  lr: 0.001
+  warmup_ratio: 0.1
+  validation_split: 0.2
+  checkpoint_dir: checkpoints/
+  device: mps
+  evaluation_metric: accuracy
+  best_metric_lower_is_better: false
+
+
+model_LSTM:
+  input_shape: [28, 28, 1]
+  input_size: 16
+  output_size: 3
+  hidden_layers: [128, 64]
+  hidden_size: 2048
+  num_layers: 4
+  dropout: 0.2
+  bidirectional: false
