@@ -9,6 +9,7 @@ data:
   test_size: 10
 
 training_LSTM:
+  name: LSTM
   epochs: 10
   batch_size: 1
   learning_rate: 0.001
@@ -28,6 +29,6 @@ model_LSTM:
   output_size: 3
   hidden_layers: [128, 64]
   hidden_size: 2048
-  num_layers: 4
+  num_layers: 2
   dropout: 0.2
   bidirectional: false
