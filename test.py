@@ -23,6 +23,7 @@ if __name__ == '__main__':
         batch_size=config.training_LSTM.batch_size,
         shuffle=False,
         num_workers= 10) 
+    print("")
     
     print("________Tensor[i]________")
     print(f"[i] Padding or Truncate data dim: {config.data.pad_tr}")
