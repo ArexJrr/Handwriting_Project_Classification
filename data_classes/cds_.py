@@ -169,3 +169,4 @@ if __name__ == '__main__':
     config = load_config(os.path.join(os.path.dirname(__file__), '..','config', 'config_RNN.yaml'))
     dir = [config.data.data_dir, config.data.label_dir]
     train_dataset = HWDataset(dir, 'train', config.data.pad_tr)
+    print("djdjd")
