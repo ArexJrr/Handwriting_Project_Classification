@@ -9,9 +9,6 @@ from tqdm import tqdm
 import openpyxl 
 from sklearn.preprocessing import LabelEncoder
 warnings.filterwarnings("ignore", category=pd.errors.DtypeWarning)
-#from utils import compute_metrics, load_config
-
-
 class HW_SVM_Dataset():
 
     def __init__(self, paths, type_ds):
@@ -158,6 +155,12 @@ if __name__ == '__main__':
     dir.append(os.path.join(os.path.dirname(__file__), '..', 'DATA'))
     dir.append(os.path.join(os.path.dirname(__file__), '..', 'Labels'))
 
-    train_ds = HW_SVM_Dataset(dir, "test")
-    new_ds = train_ds.get_ds()
-    new_ds.to_csv('output.csv', index=False, sep=",")
+    train_ds = HW_SVM_Dataset(dir, "train")
+    val_ds = HW_SVM_Dataset(dir, "val")
+    test_ds = HW_SVM_Dataset(dir, "test")
+    new_train_ds = train_ds.get_ds()
+    new_train_ds.to_csv('train_SVM.csv', index=False, sep=",")
+    new_val_ds = val_ds.get_ds()
+    new_val_ds.to_csv('test_SVM.csv', index=False, sep=",")
+    new_test_ds = test_ds.get_ds()
+    new_test_ds.to_csv('val_SVM.csv', index=False, sep=",")

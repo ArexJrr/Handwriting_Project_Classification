@@ -8,15 +8,10 @@ import re
 from tqdm import tqdm
 from sklearn.preprocessing import LabelEncoder
 warnings.filterwarnings("ignore", category=pd.errors.DtypeWarning)
-from utils import compute_metrics, load_config
+from utils import load_config
 from torch.optim.lr_scheduler import StepLR
 import yaml
 from addict import Dict
-
-
-#     # forse successivamente altra funz: print("========= MODEL INFO[i] =========")
-#     pass
-
 
 class HWDataset(Dataset):
     def __init__(self, paths, type_ds, len_ds):
@@ -170,3 +165,7 @@ class HWDataset(Dataset):
         return list_sub, max_n_records
 
 
+if __name__ == '__main__':
+    config = load_config(os.path.join(os.path.dirname(__file__), '..','config', 'config_RNN.yaml'))
+    dir = [config.data.data_dir, config.data.label_dir]
+    train_dataset = HWDataset(dir, 'train', config.data.pad_tr)

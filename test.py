@@ -17,7 +17,7 @@ if __name__ == '__main__':
     dir.append(config.data.data_dir)
     dir.append(config.data.label_dir)
     test_dataset = HWDataset(dir, 'test', config.data.pad_tr)
-    device = torch.device(config.training_LSTM.device)
+    device = torch.device(config.data.device)
     test_dataloader = DataLoader(
         test_dataset, 
         batch_size=config.training_LSTM.batch_size,
@@ -35,9 +35,7 @@ if __name__ == '__main__':
     model.load_state_dict(torch.load("models/{}_model_hw.pt".format(config.training_LST.name)))
 
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=config.training_LSTM.learning_rate)
-    scheduler = StepLR(optimizer, step_size=1, gamma=0.8)
 
-    test_metrics = evaluate(model, test_dataloader, criterion, optimizer, device)
+    test_metrics = evaluate(model, test_dataloader, criterion, device)
     for key, value in test_metrics.items():
         print(f"Test {key}: {value:.4f}")
