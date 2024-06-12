@@ -72,3 +72,9 @@ def evaluate(model, dataloader, loss_fn, device):
     # plt.title('Training Loss per Batch')
     # plt.legend()
     # plt.show()
+
+
+
+
+
+

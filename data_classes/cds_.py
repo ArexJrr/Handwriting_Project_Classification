@@ -12,6 +12,7 @@ from utils import load_config
 from torch.optim.lr_scheduler import StepLR
 import yaml
 from addict import Dict
+from itertools import chain
 
 class HWDataset(Dataset):
     def __init__(self, paths, type_ds, len_ds):
@@ -22,7 +23,8 @@ class HWDataset(Dataset):
         self.list_valid_subjects , self.max_len_series = self.chk_csv_data(self.paths[0]) # Ritorna una lista con i soggetti failed più il numero massimo della serie
         self.list_ofsubject = self.select_sub_ds(self.type_ds) # splitting ds 
         self.data_files = self.data_filecsv_path() # ottenimento path csv 
-
+        self.balancing_task()
+       # add gaussian task noise self.data_files = 
 
     def __len__(self):
         return len(self.data_files)  # 91 Soggetti del train 91 soggetti x 21 files 
@@ -30,22 +32,73 @@ class HWDataset(Dataset):
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
             idx = idx.tolist()
-        task_id , subject_code = self.identifier_sub_task(self.data_files[idx])    
-        label = self.find_label(task_id, subject_code)
-        csv_file = self.data_files[idx]
-        dataset = pd.read_csv(csv_file, sep=',', names=range(21))
-        list_columns_name = dataset.iloc[0]
-        dataset = dataset[1:]
-        dataset.columns = list_columns_name
-        dataset = dataset.iloc[:, 1:-3].drop(columns=['Sequence'])
-        dataset['Phase'] = LabelEncoder().fit_transform(dataset['Phase']) # LabelEncoding 
-        dataset = self.pad_and_truncate_data(dataset, self.len_ds)        
-        dataset = dataset.astype(float)
-        item = {
+        if not isinstance(self.data_files[idx], dict):
+            task_id , subject_code = self.identifier_sub_task(self.data_files[idx])    
+            label = self.find_label(task_id, subject_code)
+            csv_file = self.data_files[idx]
+            dataset = pd.read_csv(csv_file, sep=',', names=range(21))
+            list_columns_name = dataset.iloc[0]
+            dataset = dataset[1:]
+            dataset.columns = list_columns_name
+            dataset = dataset.iloc[:, 1:-3].drop(columns=['TimestampRaw']) #prima Sequence
+            dataset['Phase'] = LabelEncoder().fit_transform(dataset['Phase']) # LabelEncoding 
+            dataset = dataset.astype(float)
+            dataset = self.pad_and_truncate_data(dataset, self.len_ds)        
+            item = {
+                'label': torch.tensor(label, dtype=torch.long), #perché si ha compatibilità con la crossentropy loss 
+                'data': torch.tensor(dataset.values, dtype=torch.float32) 
+            }
+            return item 
+        else: return self.data_files[idx]
+
+    def balancing_task(self):
+        zero_label_csv, one_label_csv, two_label_csv = [], [], []
+        for csv_file in self.data_files:
+            task_id , subject_code = self.identifier_sub_task(csv_file)
+            label = self.find_label(task_id, subject_code)
+            if label == 0 : zero_label_csv.append(csv_file)
+            elif label == 1 : one_label_csv.append(csv_file)
+            elif label == 2 : two_label_csv.append(csv_file)
+        max_item = max(len(zero_label_csv), len(one_label_csv), len(two_label_csv))
+        pre_len_zero, pre_len_one, pre_len_two = len(zero_label_csv), len(one_label_csv), len(two_label_csv)
+        print("Totale Elementi dataset:", len(self.data_files))
+        print("di cui:")
+        print("Elementi label 0:",pre_len_zero)
+        print("Elementi label 1:",pre_len_one)
+        print("Elementi label 2:",pre_len_two)
+        print("")
+        self.apply_gaussian_noise(max_item, pre_len_zero, zero_label_csv, 0)
+        self.apply_gaussian_noise(max_item, pre_len_one, one_label_csv, 1)
+        self.apply_gaussian_noise(max_item, pre_len_two, two_label_csv, 2)
+        print("Totale Elementi nel dataset:",len(self.data_files))
+
+
+    def apply_gaussian_noise(self, max_item, len_ID_label, csv_file, label):
+        print(f"Per la label {label} devo generare {max_item-len_ID_label} del massimo{max_item}")        
+        for i in range(max_item-len_ID_label):
+            dataset = pd.read_csv(csv_file[i%len_ID_label], sep=',', names=range(21))
+            list_columns_name = dataset.iloc[0]
+            dataset = dataset[1:]
+            dataset.columns = list_columns_name
+            dataset = dataset.iloc[:, 1:-3].drop(columns=['TimestampRaw']) # forse droppare timestampRAW .drop(columns=['Sequence']) forse droppare timestampRAW
+            dataset['Phase'] = LabelEncoder().fit_transform(dataset['Phase'])
+            dataset = dataset.astype(float)
+            cols_to_temp_remove = ['Phase', 'PenId', 'Sequence']
+            cols_index = {col : dataset.columns.get_loc(col) for col in cols_to_temp_remove}
+            removed_cols = dataset[cols_to_temp_remove].copy()
+            dataset.drop(columns=cols_to_temp_remove, inplace=True)
+            noise = np.random.normal(0, 0.1, size=dataset.shape)
+            dataset = dataset + noise
+            for col, idx in sorted(cols_index.items(), key=lambda x: x[1]):
+                dataset.insert(loc=idx, column=col, value=removed_cols[col])
+            dataset = self.pad_and_truncate_data(dataset, self.len_ds)
+            dataset.to_csv("primotest_YESnoise.csv")     
+            item = {
             'label': torch.tensor(label, dtype=torch.long), #perché si ha compatibilità con la crossentropy loss 
             'data': torch.tensor(dataset.values, dtype=torch.float32) 
-        }
-        return item 
+            }
+            self.data_files.append(item)
+
 
     def get_info(self):
         return len(self.list_valid_subjects), len(self.list_ofsubject), len(self.data_files)
@@ -61,7 +114,6 @@ class HWDataset(Dataset):
             df_modified = df.copy()
         return df_modified
 
-    
     def find_label(self, task_id, subject_code):
         csv_template_filename = f'task_{task_id}.csv'
         csv_file_path = os.path.join(self.paths[1], csv_template_filename)
@@ -169,4 +221,5 @@ if __name__ == '__main__':
     config = load_config(os.path.join(os.path.dirname(__file__), '..','config', 'config_RNN.yaml'))
     dir = [config.data.data_dir, config.data.label_dir]
     train_dataset = HWDataset(dir, 'train', config.data.pad_tr)
-    print("djdjd")
+
+
