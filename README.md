@@ -12,13 +12,71 @@
   <a href="#License">License</a>
 </p>
 
-IJFIJTIJG TJITGIGTJIGJGITJGITJGIGJ GTJIGJIGTIJGTJIGTJIGT
+The **Handwriting Classification** project was conceived to identify and classify learning disabilities, known as Specific Learning Disorders (DSA), in preschool children through a series of specific tasks. These tasks include drawing, copying shapes, and writing sentences or numbers, each designed to reveal potential difficulties in various cognitive areas of the child.
+
+The primary goal of this study is the early diagnosis of learning disabilities in children. By identifying these issues promptly, appropriate therapies can be provided by psychologists and psychotherapists. Early and targeted intervention can significantly improve therapeutic outcomes, allowing these disabilities to be addressed before they become more ingrained and difficult to manage.
+
+The project employs advanced machine learning and deep learning techniques to analyze children's handwriting patterns. These algorithms enable accurate and reliable classification of potential learning disabilities. Utilizing these technologies makes the project a valuable tool for specialists, providing concrete and timely support in identifying children's needs. 
+
+
+## 🌟 Inspiration
+The data collection technique that enabled us to engage preschool subjects was storytelling. Specifically, we used a charming narrative to capture the children's interest and cooperation:
+
+*"This is the story of Bipi, a little Martian who has come to Earth to explore our world, and Hanumi, the monkey who will help him learn about the things humans do. Bipi wants to learn what people do on planet Earth. For example, he wants to go to school like human children to learn how to draw and write. Can you help him see how it's done?"*
+
+Through this engaging story, children were motivated to perform the tasks assigned to them. The narrative not only captivated their imagination but also provided a context in which they could relate to the activities. This approach proved effective in making the children feel comfortable and enthusiastic about participating in the study.
+
+By framing the tasks within the story, we were able to collect data in a natural and stress-free manner. The children, engrossed in helping Bipi and Hanumi, approached the drawing, shape copying, and writing tasks with genuine interest and effort. This method ensured that the data collected was reflective of their true abilities, without the pressure often associated with formal testing environments.
+
+The use of storytelling as a data collection method highlights the importance of creating a child-friendly and engaging atmosphere. It acknowledges that preschool children respond positively to imaginative and interactive scenarios, which can significantly enhance their willingness to participate and the quality of the data obtained. This innovative approach not only facilitated the data collection process but also underscored the potential of using creative techniques in educational and psychological research.
+
+## 💾 Data Collection
+The collected dataset comes from various subjects who were asked to complete 21 tasks. Each subject was provided with a graphic tablet and a small monitor to perform the tasks, with the writing unit (the pen) potentially varying during the task. The collected data is in the form of time series, and each completed task has an associated .CSV file. Each task contains the following features:
+
+- `Timestamp`: The exact date and time when the data was recorded, following the ISO 8601 format with millisecond precision.
+- `PointX`: The X coordinate of the pen tip on the tablet surface, representing the horizontal position.
+- `PointY`: The Y coordinate of the pen tip on the tablet surface, representing the vertical position.
+- `Phase`: Indicates the interaction state of the pen, such as 'Hover' (suspended), 'Touch' (touch), or other states.
+- `Pressure`: The amount of pressure applied by the pen.
+- `PointDisplayX`: The X coordinate on the display where the pen interaction is mapped. This is the translated position on the screen.
+- `PointDisplayY`: The Y coordinate on the display where the pen interaction is mapped. This is the translated position on the screen.
+- `PointRawX`: The raw value of the X coordinate from the pen sensor.
+- `PointRawY`: The raw value of the Y coordinate from the pen sensor.
+- `PressureRaw`: The raw value of the pressure from the pen sensor.
+- `TimestampRaw`: The raw timestamp value, in a less readable format, representing a low-level timing mechanism.
+- `Sequence`: A sequential number representing the order of data points, useful for reconstructing the interaction sequence.
+- `Rotation`: The rotation angle of the pen in degrees.
+- `Azimuthv`: The angle between the pen and the vertical axis (i.e., the tilt angle).
+- `Altitude`: The angle between the pen and the horizontal plane.
+- `TiltX`: The tilt of the pen along the X axis, indicating the direction and degree of tilt.
+- `iltY`: The tilt of the pen along the Y axis, indicating the direction and degree of tilt.
+- `PenId`: The identifier of the pen, useful when multiple pens are used.
+
+## 🔩 Requirements
+The project is based on `Python` *at version* `3.12.1` - one of the latest version of Python at the time of writing **June 24'**. A few consideration:
+
+- It is recommended to use a virtual environment to manage the dependencies of the project. For example [conda](https://docs.conda.io/en/latest/).
+- The requirements are listed in the `requirements.txt` file and can be installed using `pip install -r requirements.txt`.
+
+This project is based on the following libraries:
+- `torch` with version `0.10` for Pytorch
+- `torchvision` with version `` for PyTorch vision.
+- ``  ``
+- ``  ``
+- `` ``
+- `` `` 
+- ``  ``
+- ``  ``
+
+
 ## ⚡ Getting Started
 
 
 
-## 📝 Code structure or 📁 file structure
-The code is structured as follows:
+
+
+##  📁 Project files structure
+The project is structured as follows:
 ```
 hw_project/
 │

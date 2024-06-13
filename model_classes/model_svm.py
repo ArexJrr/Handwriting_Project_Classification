@@ -287,6 +287,14 @@ from cvxopt import matrix, solvers
 from sklearn.metrics import confusion_matrix, classification_report
 import itertools
 
+"""
+Created on Sat Jun 1 12:43 CET 2024
+
+@author: andreapietro.arena@unikorestudent.it
+
+Some description
+"""
+
 class SVM:
     '''
     This class implements a Support Vector Machine for classification from scratch using the cvxopt library.

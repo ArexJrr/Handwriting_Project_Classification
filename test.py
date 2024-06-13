@@ -10,6 +10,13 @@ from model_classes.model import Model
 from utils import load_config, evaluate
 from torch.optim.lr_scheduler import StepLR
 
+"""
+Created on Tue May 21 15:46 CET 2024
+
+@author: andreapietro.arena@unikorestudent.it
+
+Some description
+"""
 
 if __name__ == '__main__':
     config = load_config(os.path.join(os.path.dirname(__file__), 'config', 'config_RNN.yaml'))

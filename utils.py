@@ -6,6 +6,14 @@ import tqdm
 import yaml
 from addict import Dict
 
+"""
+Created on Sat May 25 14:03 CET 2024
+
+@author: andreapietro.arena@unikorestudent.it
+
+Some description
+"""
+
 def load_config(config_path):
     try:
         with open(config_path, 'r') as file:

@@ -14,6 +14,14 @@ import yaml
 from addict import Dict
 from itertools import chain
 
+"""
+Created on Tue May 21 01:43 CET 2024
+
+@author: andreapietro.arena@unikorestudent.it
+
+Some description
+"""
+
 class HWDataset(Dataset):
     def __init__(self, paths, type_ds, len_ds):
         self.config = load_config(os.path.join(os.path.dirname(__file__), '..','config', 'config_RNN.yaml'))
@@ -24,7 +32,6 @@ class HWDataset(Dataset):
         self.list_ofsubject = self.select_sub_ds(self.type_ds) # splitting ds 
         self.data_files = self.data_filecsv_path() # ottenimento path csv 
         self.balancing_task()
-       # add gaussian task noise self.data_files = 
 
     def __len__(self):
         return len(self.data_files)  # 91 Soggetti del train 91 soggetti x 21 files 
@@ -61,21 +68,16 @@ class HWDataset(Dataset):
             elif label == 2 : two_label_csv.append(csv_file)
         max_item = max(len(zero_label_csv), len(one_label_csv), len(two_label_csv))
         pre_len_zero, pre_len_one, pre_len_two = len(zero_label_csv), len(one_label_csv), len(two_label_csv)
-        print("Totale Elementi dataset:", len(self.data_files))
-        print("di cui:")
-        print("Elementi label 0:",pre_len_zero)
-        print("Elementi label 1:",pre_len_one)
-        print("Elementi label 2:",pre_len_two)
-        print("")
+        print(f"[i] CSV label 0: {len(zero_label_csv)} | difference from the biggest is: {max_item-pre_len_zero}")
+        print(f"[i] CSV label 1: {len(one_label_csv)} | difference from the biggest is: {max_item-pre_len_one}")
+        print(f"[i] CSV label 2: {len(two_label_csv)} | difference from the biggest is: {max_item-pre_len_two}")
         self.apply_gaussian_noise(max_item, pre_len_zero, zero_label_csv, 0)
         self.apply_gaussian_noise(max_item, pre_len_one, one_label_csv, 1)
         self.apply_gaussian_noise(max_item, pre_len_two, two_label_csv, 2)
-        print("Totale Elementi nel dataset:",len(self.data_files))
-
+        print(f"[i] Oversampling data final dim: {len(self.data_files)} | each one label: {max_item}")
 
     def apply_gaussian_noise(self, max_item, len_ID_label, csv_file, label):
-        print(f"Per la label {label} devo generare {max_item-len_ID_label} del massimo{max_item}")        
-        for i in range(max_item-len_ID_label):
+        for i in tqdm(range(max_item-len_ID_label), desc=f"[+] Applying Gaussian noise for class {label}"):
             dataset = pd.read_csv(csv_file[i%len_ID_label], sep=',', names=range(21))
             list_columns_name = dataset.iloc[0]
             dataset = dataset[1:]
@@ -92,7 +94,6 @@ class HWDataset(Dataset):
             for col, idx in sorted(cols_index.items(), key=lambda x: x[1]):
                 dataset.insert(loc=idx, column=col, value=removed_cols[col])
             dataset = self.pad_and_truncate_data(dataset, self.len_ds)
-            dataset.to_csv("primotest_YESnoise.csv")     
             item = {
             'label': torch.tensor(label, dtype=torch.long), #perché si ha compatibilità con la crossentropy loss 
             'data': torch.tensor(dataset.values, dtype=torch.float32) 
@@ -100,8 +101,8 @@ class HWDataset(Dataset):
             self.data_files.append(item)
 
 
-    def get_info(self):
-        return len(self.list_valid_subjects), len(self.list_ofsubject), len(self.data_files)
+    # def get_info(self):
+    #     return len(self.list_valid_subjects), len(self.list_ofsubject), len(self.data_files)
 
     def pad_and_truncate_data(self, df, value):
         if len(df) < value:
@@ -189,7 +190,7 @@ class HWDataset(Dataset):
         if type_ds.lower() == 'val': return val_list_subjects
         else:
             print("________ Datasets[i] ________")
-            print(f"[i] Number of valid subject: {len(self.list_valid_subjects)}")
+            print(f"[i] Number of valid subject: {len(self.list_valid_subjects)}  before Oversampling")
             print(f"[i] Test subjects: {len(test_list_subjects)} | percentage % {self.config.data.test_size}") 
             return test_list_subjects
         
@@ -217,9 +218,9 @@ class HWDataset(Dataset):
         return list_sub, max_n_records
 
 
-if __name__ == '__main__':
-    config = load_config(os.path.join(os.path.dirname(__file__), '..','config', 'config_RNN.yaml'))
-    dir = [config.data.data_dir, config.data.label_dir]
-    train_dataset = HWDataset(dir, 'train', config.data.pad_tr)
+# if __name__ == '__main__':
+#     config = load_config(os.path.join(os.path.dirname(__file__), '..','config', 'config_RNN.yaml'))
+#     dir = [config.data.data_dir, config.data.label_dir]
+#     train_dataset = HWDataset(dir, 'train', config.data.pad_tr)
 
 

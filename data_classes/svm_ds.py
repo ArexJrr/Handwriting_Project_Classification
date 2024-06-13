@@ -9,8 +9,15 @@ from tqdm import tqdm
 import openpyxl 
 from sklearn.preprocessing import LabelEncoder
 warnings.filterwarnings("ignore", category=pd.errors.DtypeWarning)
-class HW_SVM_Dataset():
 
+"""
+Created on Tue May 30 13:04 CET 2024
+
+@author: andreapietro.arena@unikorestudent.it
+
+Some description
+"""
+class HW_SVM_Dataset():
     def __init__(self, paths, type_ds):
         self.paths = paths
         self.type_ds = type_ds
