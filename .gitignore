@@ -1,5 +1,4 @@
 *.csv
-*.mp4
 *.pyc
 *.ipynb
 DATA/

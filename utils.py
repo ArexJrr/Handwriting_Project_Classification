@@ -4,6 +4,7 @@ from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_sc
 import numpy as np
 import tqdm
 import yaml
+from tqdm import tqdm
 from addict import Dict
 
 """
@@ -31,8 +32,8 @@ def compute_metrics(predictions, references, num_classes=3):
         f1 = f1_score(references, predictions, average='weighted', zero_division=0)
         precision = precision_score(references, predictions, average='weighted', zero_division=0)
         recall = recall_score(references, predictions, average='weighted', zero_division=0)
-        conf_matrix = confusion_matrix(references, predictions)
-        class_report = classification_report(references, predictions, zero_division=0, output_dict=True)
+        #conf_matrix = confusion_matrix(references, predictions)
+        #class_report = classification_report(references, predictions, zero_division=0, output_dict=True)
         
         # try:
         #     roc_auc = roc_auc_score(references, predictions, average='weighted', multi_class='ovr')
@@ -44,8 +45,8 @@ def compute_metrics(predictions, references, num_classes=3):
             "f1": f1,
             "precision": precision,
             "recall": recall,
-            "confusion_matrix": conf_matrix,
-            "classification_report": class_report,
+            #"confusion_matrix": conf_matrix,
+            #"classification_report": class_report,
             # "roc_auc": roc_auc
 }
 

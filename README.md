@@ -4,12 +4,12 @@
 <a > <img src="Designer.jpeg" alt="Markdownify" width="200"> </a>
 </h1>
 <p align="center">
-  <a href="#Getting-Started">Getting Started</a> •
+  <a href="#-inspiration">Getting Started</a> •
   <a href="#how-to-use">How To Use</a> •
   <a href="#download">Download</a> •
   <a href="#credits">Credits</a> •
   <a href="#related">Related</a> •
-  <a href="#License">License</a>
+  <a href="#-license">License</a>
 </p>
 
 The **Handwriting Classification** project was conceived to identify and classify learning disabilities, known as Specific Learning Disorders (DSA), in preschool children through a series of specific tasks. These tasks include drawing, copying shapes, and writing sentences or numbers, each designed to reveal potential difficulties in various cognitive areas of the child.
@@ -52,25 +52,33 @@ The collected dataset comes from various subjects who were asked to complete 21 
 - `iltY`: The tilt of the pen along the Y axis, indicating the direction and degree of tilt.
 - `PenId`: The identifier of the pen, useful when multiple pens are used.
 
-## 🔩 Requirements
-The project is based on `Python` *at version* `3.12.1` - one of the latest version of Python at the time of writing **June 24'**. A few consideration:
+> [!CAUTION]
+> The data collected will be processed in accordance with the scientific and professional code of ethics, ensuring the utmost respect for the privacy of minor subjects and their vulnerabilities. This information will be used with the aim of improving the medical care provided and enabling early diagnosis of diseases in new patients. The collection and use of data will be done in full compliance with current regulations and with special attention to the protection of sensitive data, ensuring that every step of the process is transparent and secure for all involved.
 
-- It is recommended to use a virtual environment to manage the dependencies of the project. For example [conda](https://docs.conda.io/en/latest/).
+
+## 🔩 Requirements
+
+The project is based on `Python` *at version* `3.12.1` - one of the latest versions of Python at the time of writing **June 24'**. A few considerations:
+
+- It is recommended to use a virtual environment to manage the dependencies of the project. For example, [conda](https://docs.conda.io/en/latest/).
 - The requirements are listed in the `requirements.txt` file and can be installed using `pip install -r requirements.txt`.
 
 This project is based on the following libraries:
-- `torch` with version `0.10` for Pytorch
-- `torchvision` with version `` for PyTorch vision.
-- ``  ``
-- ``  ``
-- `` ``
-- `` `` 
-- ``  ``
-- ``  ``
 
+- `matplotlib` with version `3.8.4` - A comprehensive library for creating static, animated, and interactive visualizations in Python.
+- `numpy` with version `1.26.4` - A fundamental package for scientific computing with Python, providing support for arrays and matrices, along with a collection of mathematical functions to operate on these data structures.
+- `pandas` with version `2.2.2` - An open-source data analysis and manipulation tool, built on top of the Python programming language.
+- `pytorch` with version `2.3.0` - An open-source machine learning library based on the Torch library, used for applications such as computer vision and natural language processing.
+- `scikit-learn` with version `1.3.1` - A machine learning library for Python, providing simple and efficient tools for data mining and data analysis.
+- `scipy` with version `1.13.0` - A Python library used for scientific and technical computing, building on the NumPy array object.
+- `seaborn` with version `0.13.2` - A Python data visualization library based on Matplotlib, providing a high-level interface for drawing attractive and informative statistical graphics.
+- `torch` with version `0.10` - A library for machine learning that is a core part of the PyTorch ecosystem.
+- `torchvision` with version `` - A library that provides datasets, model architectures, and image transformations for computer vision.
+- `tqdm` with version `4.66.4` - A fast, extensible progress bar for Python and CLI.
+- `yaml` with version `0.2.5` - A Python library for parsing and writing YAML, a human-friendly data serialization standard.
 
-## ⚡ Getting Started
-
+## 🚀 Features
+Describe models used ML and DL 
 
 
 
@@ -108,9 +116,11 @@ hw_project/
 └── ...
 ```
 
+continue to decribe classes
 
 
 
 
-## License
-Licensed under the terms of the CC BY-NC-SA 4.0, Copyright ©️ 2024 - present Andrea Pietro Arena (https://github.com/ArexJrr). You can see the full license and terms and conditions in the LICENSE file.  🧾 🔒
+
+## 🧾 License
+Licensed under the terms of the CC BY-NC-SA 4.0, Copyright ©️ 2024 - present Andrea Pietro Arena (https://github.com/ArexJrr). You can see the full license and terms and conditions in the LICENSE file.

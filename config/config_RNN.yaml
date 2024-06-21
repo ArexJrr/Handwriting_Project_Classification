@@ -23,7 +23,7 @@ RNN:
   model:
     input_size: 16
     output_size: 3
-    hidden_size: 2048
+    hidden_size: 512
     num_layers: 2
     dropout: 0.2
 
@@ -41,7 +41,7 @@ LSTM:
   model:
     input_size: 16
     output_size: 3
-    hidden_size: 2048
+    hidden_size: 128
     num_layers: 2
     dropout: 0.2
     bidirectional: false
@@ -61,7 +61,7 @@ GRU:
   model:
     input_size: 16
     output_size: 3
-    hidden_size: 2048
+    hidden_size: 256
     num_layers: 2
     dropout: 0.2
     bidirectional: false

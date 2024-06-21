@@ -1,8 +1,10 @@
 import os 
 import torch 
-from tqdm import tqdm
 import matplotlib.pyplot as plt
-from data_classes.cds_ import HWDataset
+import torch.utils
+import torch.utils.data
+from data_classes.dataset_management import HW_Dataset_ML, HWDataset_DL
+from tqdm import tqdm
 import torch.nn as nn
 from torch.utils.data import DataLoader
 import torch.optim as optim 
@@ -11,7 +13,6 @@ from utils import load_config, evaluate
 from torch.optim.lr_scheduler import StepLR
 import yaml
 from addict import Dict
-
 """
 Created on Tue May 21 15:46 CET 2024
 
@@ -20,7 +21,7 @@ Created on Tue May 21 15:46 CET 2024
 Some description
 """
 
-def info_model(config):
+def info_model(config: yaml):
     """
     Print the configuration information of the machine learning model.
 
@@ -72,8 +73,10 @@ def info_model(config):
     ## Aggiungere optmizer e scheduler
     if config.training.name != "RNN" : print(f"[i] Bidirectional state: {config.model.bidirectional}")
 
-def train_step(model, dataloader, loss_fn, optimizer, device):
+def train_step(model : nn.Module, dataloader: torch.utils.data.DataLoader, loss_fn: nn, optimizer: torch.optim, device: torch.device) -> float:
     """
+    Summary
+    ----------
     Performs a training step for the machine learning model on a single epoch.
 
     Parameters
@@ -145,7 +148,6 @@ def train_and_evaluate(model, train_dataset, val_dataset, model_config, device, 
     )
 
     print("________Tensor[i]________")
-    print(f"[i] Padding or Truncate data dim: {model_config.model.hidden_size}")
     print(f"[i] 1st Tensor info: {(temp := next(iter(train_dataloader))['data'].to(device).shape)} Batch size: {temp[0]} Features: {temp[2]}")
     
 
@@ -312,12 +314,18 @@ def define_and_run_GRU(config, device, train_dataset, val_dataset):
 if __name__ == '__main__':
     config = load_config(os.path.join(os.path.dirname(__file__), 'config', 'config_RNN.yaml'))
     dir = [config.data.data_dir, config.data.label_dir]
-    train_dataset = HWDataset(dir, 'train', config.data.pad_tr)
-    val_dataset = HWDataset(dir, 'val', config.data.pad_tr)
+    train_dataset = HWDataset_DL(dir, 'train', config.data.pad_tr)
+    val_dataset = HWDataset_DL(dir, 'val', config.data.pad_tr)
+    #train_dataset = HWDataset(dir, 'train', config.data.pad_tr)
+    #val_dataset = HWDataset(dir, 'val', config.data.pad_tr)
     device = torch.device(config.data.device)
-    #define_and_run_RNN(config, device, train_dataset, val_dataset)
+    # #define_and_run_RNN(config, device, train_dataset, val_dataset)
     define_and_run_LSTM(config, device, train_dataset, val_dataset)
-    #define_and_run_GRU(config, device, train_dataset, val_dataset)
+    # #define_and_run_GRU(config, device, train_dataset, val_dataset)
+
+
+
+
 
 
 
