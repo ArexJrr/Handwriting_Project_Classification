@@ -1,5 +1,8 @@
 import os 
+import matplotlib.pyplot as plt
+import seaborn as sns
 import torch 
+import pandas as pd
 import matplotlib.pyplot as plt
 import torch.utils
 import torch.utils.data
@@ -9,7 +12,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 import torch.optim as optim 
 from model_classes.model import Model
-from utils import load_config, evaluate
+from utils import load_config, evaluate, save_confusion_matrix, save_classification_report, save_loss_plot
 from torch.optim.lr_scheduler import StepLR
 import yaml
 from addict import Dict
@@ -73,6 +76,8 @@ def info_model(config: yaml):
     ## Aggiungere optmizer e scheduler
     if config.training.name != "RNN" : print(f"[i] Bidirectional state: {config.model.bidirectional}")
 
+
+
 def train_step(model : nn.Module, dataloader: torch.utils.data.DataLoader, loss_fn: nn, optimizer: torch.optim, device: torch.device) -> float:
     """
     Summary
@@ -125,13 +130,24 @@ def train_step(model : nn.Module, dataloader: torch.utils.data.DataLoader, loss_
     return avg_loss
 
 
-def train_and_evaluate(model, train_dataset, val_dataset, model_config, device, optimizer, scheduler):
-    # config.LSTM.
+def train_and_evaluate(model: nn.Module, train_dataset: torch.utils.data.Dataset, val_dataset: torch.utils.data.Dataset, model_config: yaml, device: torch.device, optimizer: torch.optim, scheduler: torch.optim):
+
     model.to(device)
     criterion = nn.CrossEntropyLoss()
-
+    output_dir = []
+    train_losses = []
+    val_losses = []
     best_accuracy = 0
     best_accuracy_epoch = 0
+    patience = 5  # Numero di epoche da attendere prima di interrompere l'addestramento se non c'è miglioramento
+    min_delta = 0.001  # Miglioramento minimo richiesto per considerare un cambiamento nella loss
+    best_val_loss = float('inf')
+    patience_counter = 0
+
+    output_dir.append(f"train_log/{model_config.training.name}/loss_comparison")
+    output_dir.append(f"train_log/{model_config.training.name}/train_metrics")
+    os.makedirs(output_dir[0], exist_ok=True)
+    os.makedirs(output_dir[1], exist_ok=True)
     
     train_dataloader = DataLoader(
         train_dataset, 
@@ -147,27 +163,47 @@ def train_and_evaluate(model, train_dataset, val_dataset, model_config, device, 
         num_workers=model_config.training.num_workers
     )
 
-    print("________Tensor[i]________")
-    print(f"[i] 1st Tensor info: {(temp := next(iter(train_dataloader))['data'].to(device).shape)} Batch size: {temp[0]} Features: {temp[2]}")
-    
-
+    print(f"[i] 1st Tensor info: {(temp := next(iter(train_dataloader))['data'].to(device).shape)} Batch size: {temp[0]} Features: {temp[2]}")    
+    print("________Training[i]________")
     for epoch in range(model_config.training.epochs):
         avg_loss = train_step(model, train_dataloader, criterion, optimizer, device)
-        metrics = evaluate(model, val_dataloader, criterion, device)
-        print(f"Epoch {epoch+1}/{model_config.training.epochs}, Train Loss: {avg_loss:.4f}, Val Loss: {metrics['loss']:.4f}")
-        
+        metrics = evaluate(model, val_dataloader, criterion, device)  # passare il tipo se train/val o test modificare in utils
+        val_loss = metrics['loss']
+
+        train_losses.append(avg_loss)
+        val_losses.append(val_loss)
+        print()
+        print(f"[i] Epoch N: {epoch+1}/{model_config.training.epochs}")
+        print(f"[i] Train Loss: {avg_loss:.4f}, Val Loss: {val_loss:.4f}")
+        print(f"[i] Accuracy on Validation set: {metrics['accuracy']:.2f}")
+
+        if val_loss < best_val_loss - min_delta:
+            best_val_loss = val_loss
+            patience_counter = 0
+            torch.save(model.state_dict(), f"models/{model_config.training.name}_model_hw.pt")
+        else:
+            patience_counter += 1
+            
+        if patience_counter >= patience:
+            print("Early stopping triggered")
+            break
+
         if metrics['accuracy'] > best_accuracy:
             best_accuracy = metrics['accuracy']
             best_accuracy_epoch = epoch + 1
-            torch.save(model.state_dict(), f"models/{model_config.training.name}_model_hw.pt")
 
-        for key, value in metrics.items():
-            print(f"{key}: {value:.4f}")
+        conf_matrix = metrics['confusion_matrix']
+        class_report = metrics['classification_report']
+        class_names = [0, 1, 2]  
+    
+        save_confusion_matrix(conf_matrix, class_names, output_dir[1], epoch, model_config.training.name)
+        save_classification_report(class_report, output_dir[1], epoch, model_config.training.name)
+        save_loss_plot(train_losses, val_losses, output_dir[0], epoch, model_config.training.name)
 
         scheduler.step()
 
 
-def define_and_run_RNN(config, device, train_dataset, val_dataset):
+def define_and_run_RNN(config: yaml, device: torch.device, train_dataset: torch.utils.data.Dataset, val_dataset: torch.utils.data.Dataset):
     """
     Defines and initiates the training of a recurrent neural network (RNN) based on the provided configuration.
 
@@ -214,7 +250,7 @@ def define_and_run_RNN(config, device, train_dataset, val_dataset):
     info_model(config.RNN)
     train_and_evaluate(model, train_dataset, val_dataset, config.RNN, device, optimizer, scheduler)
 
-def define_and_run_LSTM(config, device, train_dataset, val_dataset):
+def define_and_run_LSTM(config: yaml, device: torch.device, train_dataset: torch.utils.data.Dataset, val_dataset: torch.utils.data.Dataset):
     """
     Defines and starts the training of an LSTM neural network based on the provided configuration.
 
@@ -311,18 +347,16 @@ def define_and_run_GRU(config, device, train_dataset, val_dataset):
     train_and_evaluate(model, train_dataset, val_dataset, config.GRU, device, optimizer, scheduler)
 
 
+
 if __name__ == '__main__':
     config = load_config(os.path.join(os.path.dirname(__file__), 'config', 'config_RNN.yaml'))
     dir = [config.data.data_dir, config.data.label_dir]
     train_dataset = HWDataset_DL(dir, 'train', config.data.pad_tr)
     val_dataset = HWDataset_DL(dir, 'val', config.data.pad_tr)
-    #train_dataset = HWDataset(dir, 'train', config.data.pad_tr)
-    #val_dataset = HWDataset(dir, 'val', config.data.pad_tr)
     device = torch.device(config.data.device)
-    # #define_and_run_RNN(config, device, train_dataset, val_dataset)
+    # # #define_and_run_RNN(config, device, train_dataset, val_dataset)
     define_and_run_LSTM(config, device, train_dataset, val_dataset)
-    # #define_and_run_GRU(config, device, train_dataset, val_dataset)
-
+    # # #define_and_run_GRU(config, device, train_dataset, val_dataset)
 
 
 

@@ -5,6 +5,7 @@ import re
 import torch
 import warnings
 import yaml
+import sys
 from abc import ABC
 from addict import Dict
 from importlib import import_module
@@ -13,7 +14,8 @@ from sklearn.preprocessing import LabelEncoder
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
-from ..utils import load_config
+sys.path.append('../..')
+from utils import load_config
 warnings.filterwarnings("ignore", category=pd.errors.DtypeWarning)
 
 
@@ -99,6 +101,7 @@ class BaseDataset(ABC):
         self.config = load_config(os.path.join(os.path.dirname(__file__), '..', 'config', 'config_RNN.yaml'))      # Load the config from yaml file
         self.paths = paths                                                                  # Main path where the data folders for each subject are located.
         self.type_ds = type_ds                                                              # Type of dataset to be created (useful for train, validation, test split).
+        print("________ Datasets[i] ________")        #how to check istance                              # Print information about the dataset
         self.list_valid_subjects, self.max_len_series = self.chk_csv_data(self.paths[0])    # Call chk_csv_data function to get all valid subject folder paths (containing tasks) and maximum series length.
         self.list_ofsubject = self.select_sub_ds(self.type_ds)                              # Use select_sub_ds function for splitting the data.
         self.data_files = self.data_filecsv_path()                                          # Call data_filecsv_path function to get the absolute paths of the CSV files for the specified dataset type.
@@ -251,7 +254,6 @@ class BaseDataset(ABC):
         test_list_subjects = subjects                                                   # Subtract from the len the number of subject and update the list
 
         if type_ds.lower() == 'train':                                                  # Return the list of subjects in base the choice (train, validation, test)
-            print("________ Datasets[i] ________")                                      # Print information about the dataset
             print(f"[i] Number of valid subject: {len(self.list_valid_subjects)}")
             print(f"[i] Train subjects: {len(train_list_subjects)}  | percentage % {self.config.data.train_size}")
             print(f"[i] Val subjects: {len(val_list_subjects)} | percentage % {self.config.data.val_size} ")
@@ -259,7 +261,6 @@ class BaseDataset(ABC):
             return train_list_subjects
         if type_ds.lower() == 'val': return val_list_subjects
         else:
-            print("________ Datasets[i] ________")
             print(f"[i] Number of valid subject: {len(self.list_valid_subjects)}  before Oversampling")
             print(f"[i] Test subjects: {len(test_list_subjects)} | percentage % {self.config.data.test_size}") 
             return test_list_subjects
