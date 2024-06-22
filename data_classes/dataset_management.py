@@ -17,7 +17,7 @@ from tqdm import tqdm
 sys.path.append('../..')
 from utils import load_config
 warnings.filterwarnings("ignore", category=pd.errors.DtypeWarning)
-
+warnings.filterwarnings("ignore", category=FutureWarning, module="pandas")
 
 """
 Created on Tue May 21 01:43 CET 2024
@@ -261,7 +261,7 @@ class BaseDataset(ABC):
             return train_list_subjects
         if type_ds.lower() == 'val': return val_list_subjects
         else:
-            print(f"[i] Number of valid subject: {len(self.list_valid_subjects)}  before Oversampling")
+            print(f"[i] Number of valid subject: {len(self.list_valid_subjects)}")
             print(f"[i] Test subjects: {len(test_list_subjects)} | percentage % {self.config.data.test_size}") 
             return test_list_subjects
         
@@ -557,7 +557,7 @@ class HW_Dataset_ML(BaseDataset):
         datasetf = pd.read_csv(first_csv_file, sep=',', names=range(21))                        # Read the csv list file with percentage operation index to return from first file when the last file is just processed
         list_columns_name = datasetf.iloc[0]                                                    # Get the column names from the first ds row
         datasetf.columns = list_columns_name                                                    # Remove the first row from dataset
-        list_columns_name = datasetf.iloc[0, 1:-4].drop(['Sequence']).tolist()                  # Drop unuseful coluns data
+        list_columns_name = datasetf.iloc[0, 1:-4].drop(['Sequence', 'TimestampRaw']).tolist()                  # Drop unuseful coluns data
         headers = ['SubjectID', 'TaskID']                                                       # Define the headers
         for column in list_columns_name:                                                        # For each column in list of columns
             headers.extend([f'mean_{column}', f'std_{column}'])                                 # Create new column for each column from the original dataset the new columns in the new dataset (for each column create mean and standard deviation columns feature)
@@ -572,11 +572,11 @@ class HW_Dataset_ML(BaseDataset):
             list_columns_name = dataset.iloc[0]                                                 # Set the 1st row to the list columns
             dataset = dataset[1:]                                                               # Remove the first row from dataset data file 
             dataset.columns = list_columns_name                                                 # Associate the column names to the column of dataset   
-            dataset = dataset.iloc[:, 1:-4].drop(columns=['Sequence'])                          # Drop specific columns
+            dataset = dataset.iloc[:, 1:-4].drop(columns=['Sequence', 'TimestampRaw'])                          # Drop specific columns
             dataset['Phase'] = LabelEncoder().fit_transform(dataset['Phase'])                   # Using LabelEncoder to trasform the Categorical Feature to Numerical format
             dataset = dataset.astype(int)                                                       # Convert dataset to int
-            mean_values = dataset.mean()                                                        # Compute mean
-            std_values = dataset.std()                                                          # Compute standard deviation
+            mean_values = dataset.mean().round(3)                                               # Compute mean
+            std_values = dataset.std().round(3)                                                 # Compute standard deviation
             new_row_values = []                                                                 # Initialize new list values
 
             new_row_values.append(subject_code)                                                 # Append to the list the subject code
@@ -587,5 +587,7 @@ class HW_Dataset_ML(BaseDataset):
 
             new_row_values.append(label)                                                        # Finaly append the label
             new_row_df = pd.DataFrame([new_row_values], columns=headers)                        # Create and define the dataframe
+            dataset_ML = dataset_ML.dropna(axis=1, how='all')                                   # Drop the NAN column values
+            new_row_df = new_row_df.dropna(axis=1, how='all')   # Create                        # Drop the NAN column values
             dataset_ML = pd.concat([dataset_ML, new_row_df], ignore_index=True)                 # concatenate the new row
-        return dataset_ML                                                                       # Return the dataset 
+        return dataset_ML                                                                       

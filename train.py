@@ -1,21 +1,27 @@
+# from comet_ml import Experiment
+# from comet_ml.integration.pytorch import log_model
 import os 
 import matplotlib.pyplot as plt
 import seaborn as sns
 import torch 
 import pandas as pd
+from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 import torch.utils
 import torch.utils.data
 from data_classes.dataset_management import HW_Dataset_ML, HWDataset_DL
 from tqdm import tqdm
 import torch.nn as nn
+import torch
 from torch.utils.data import DataLoader
 import torch.optim as optim 
-from model_classes.model import Model
+from model_classes.model import Model_DL, KNN, SVM
 from utils import load_config, evaluate, save_confusion_matrix, save_classification_report, save_loss_plot
 from torch.optim.lr_scheduler import StepLR
 import yaml
 from addict import Dict
+
+
 """
 Created on Tue May 21 15:46 CET 2024
 
@@ -23,6 +29,12 @@ Created on Tue May 21 15:46 CET 2024
 
 Some description
 """
+
+# experiment = Experiment(
+#     api_key="TJT6yxLyBFHHT2BIEqjzKJjI2",
+#     project_name="hw-classification",
+#     workspace="arexjrr"
+# )
 
 def info_model(config: yaml):
     """
@@ -77,7 +89,6 @@ def info_model(config: yaml):
     if config.training.name != "RNN" : print(f"[i] Bidirectional state: {config.model.bidirectional}")
 
 
-
 def train_step(model : nn.Module, dataloader: torch.utils.data.DataLoader, loss_fn: nn, optimizer: torch.optim, device: torch.device) -> float:
     """
     Summary
@@ -111,12 +122,12 @@ def train_step(model : nn.Module, dataloader: torch.utils.data.DataLoader, loss_
     >>> avg_loss = train_step(model, dataloader, loss_fn, optimizer, device)
     >>> print(f'Average training loss: {avg_loss}')
     """
-    model.train() #forward pass tengo in considerazione tutti i passaggi
-    total_loss = 0.0
-    losses = []  
+    model.train()                                                               # Set the model to training mode
+    total_loss = 0.0                                                            # Initialize a variable to accumulate the total loss
+    losses = []                                                                 # Initialize an empty list to store individual batch losses                                     
 
-    for batch in tqdm(dataloader, total=len(dataloader), desc="Training..."):
-        inputs, labels = batch['data'].to(device), batch['label'].to(device)
+    for batch in tqdm(dataloader, total=len(dataloader), desc="Training..."):   # Iterate over batches in the dataloader, showing progress with tqdm
+        inputs, labels = batch['data'].to(device), batch['label'].to(device)    # Move batch data and labels to the specified GPU device
         optimizer.zero_grad()                                                   # Reset the gradients accumulated by the optimizer to zero.
         outputs = model(inputs)                                                 # Calculates model predictions for the current batch
         loss = loss_fn(outputs, labels)                                         # Calculates the loss for the current batch
@@ -131,32 +142,57 @@ def train_step(model : nn.Module, dataloader: torch.utils.data.DataLoader, loss_
 
 
 def train_and_evaluate(model: nn.Module, train_dataset: torch.utils.data.Dataset, val_dataset: torch.utils.data.Dataset, model_config: yaml, device: torch.device, optimizer: torch.optim, scheduler: torch.optim):
+    """
+    Summary
+    -------
+    Trains and evaluates a neural network model over multiple epochs using training and validation datasets.
 
-    model.to(device)
-    criterion = nn.CrossEntropyLoss()
-    output_dir = []
-    train_losses = []
-    val_losses = []
-    best_accuracy = 0
-    best_accuracy_epoch = 0
-    patience = 5  # Numero di epoche da attendere prima di interrompere l'addestramento se non c'è miglioramento
-    min_delta = 0.001  # Miglioramento minimo richiesto per considerare un cambiamento nella loss
-    best_val_loss = float('inf')
-    patience_counter = 0
+    Parameters
+    ----------
+    model : nn.Module
+        The neural network model to train and evaluate.
+    train_dataset : torch.utils.data.Dataset
+        Dataset containing training data.
+    val_dataset : torch.utils.data.Dataset
+        Dataset containing validation data.
+    model_config : yaml
+        Configuration object containing model training parameters.
+    device : torch.device
+        Device (CPU or GPU) on which to perform computations.
+    optimizer : torch.optim
+        Optimization algorithm used to update the model parameters.
+    scheduler : torch.optim
+        Learning rate scheduler for controlling the learning rate during training.
 
-    output_dir.append(f"train_log/{model_config.training.name}/loss_comparison")
-    output_dir.append(f"train_log/{model_config.training.name}/train_metrics")
-    os.makedirs(output_dir[0], exist_ok=True)
-    os.makedirs(output_dir[1], exist_ok=True)
+    Returns
+    -------
+    None
+    """
+    model.to(device)                                                                # Move the model to the specified device (CPU or GPU)
+    criterion = nn.CrossEntropyLoss()                                               # Define the loss function for classification tasks (CrossEntropyLoss)
+    output_dir = []                                                                 # Initialize an empty list for storing output directories                                     
+    train_losses = []                                                               # Initialize an empty list to store training losses
+    val_losses = []                                                                 # Initialize an empty list to store validation losses
+    best_accuracy = 0                                                               # Initialize a variable to track the best validation accuracy
+    best_accuracy_epoch = 0                                                         # Initialize a variable to track the epoch with the best validation accuracy
+    patience = 5                                                                    # Number of epochs to wait before stopping training if no improvement is observed
+    min_delta = 0.001                                                               # Minimum improvement required to consider a change in loss as significant
+    best_val_loss = float('inf')                                                    # Initialize the best validation loss to infinity
+    patience_counter = 0                                                            # Initialize a counter to track epochs since the last improvement in validation loss
+
+    output_dir.append(f"train_log/{model_config.training.name}/loss_comparison")    # Append directory path for storing loss comparison logs
+    output_dir.append(f"train_log/{model_config.training.name}/train_metrics")      # Append directory path for storing training metrics logs
+    os.makedirs(output_dir[0], exist_ok=True)                                       # Create directories if they do not exist
+    os.makedirs(output_dir[1], exist_ok=True)                                       # Create directories if they do not exist
     
-    train_dataloader = DataLoader(
+    train_dataloader = DataLoader(                                                  # Create DataLoader for training dataset
         train_dataset, 
         batch_size=model_config.training.batch_size,
         shuffle=True,
         num_workers=model_config.training.num_workers
     )
 
-    val_dataloader = DataLoader(
+    val_dataloader = DataLoader(                                                    # Create DataLoader for validation dataset
         val_dataset, 
         batch_size=model_config.training.batch_size,
         shuffle=False,
@@ -165,42 +201,47 @@ def train_and_evaluate(model: nn.Module, train_dataset: torch.utils.data.Dataset
 
     print(f"[i] 1st Tensor info: {(temp := next(iter(train_dataloader))['data'].to(device).shape)} Batch size: {temp[0]} Features: {temp[2]}")    
     print("________Training[i]________")
-    for epoch in range(model_config.training.epochs):
-        avg_loss = train_step(model, train_dataloader, criterion, optimizer, device)
-        metrics = evaluate(model, val_dataloader, criterion, device)  # passare il tipo se train/val o test modificare in utils
+    for epoch in range(model_config.training.epochs):                                       # Iterate through epochs for training
+        avg_loss = train_step(model, train_dataloader, criterion, optimizer, device)        # Perform one training step and compute average loss
+        metrics = evaluate(model, val_dataloader, criterion, device)                        # Evaluate model on validation dataset and compute validation loss and metrics
         val_loss = metrics['loss']
 
-        train_losses.append(avg_loss)
-        val_losses.append(val_loss)
+        train_losses.append(avg_loss)                                                        # Append training loss to list
+        val_losses.append(val_loss)                                                          # Append val loss to  list
         print()
-        print(f"[i] Epoch N: {epoch+1}/{model_config.training.epochs}")
+        print(f"[i] Epoch N: {epoch+1}/{model_config.training.epochs}")                      # Print epoch information and metrics
         print(f"[i] Train Loss: {avg_loss:.4f}, Val Loss: {val_loss:.4f}")
         print(f"[i] Accuracy on Validation set: {metrics['accuracy']:.2f}")
 
-        if val_loss < best_val_loss - min_delta:
+        #experiment.log_metric("train_loss", avg_loss, epoch=epoch+1)                        # Log metrics to an experiment tracker (e.g., Comet.ml)
+        #experiment.log_metric("val_loss", val_loss, epoch=epoch+1)
+        #experiment.log_metric("val_accuracy", metrics['accuracy'], epoch=epoch+1)
+
+        if val_loss < best_val_loss - min_delta:                                             # Save the model if the current validation loss is better than the previous best loss
             best_val_loss = val_loss
             patience_counter = 0
             torch.save(model.state_dict(), f"models/{model_config.training.name}_model_hw.pt")
         else:
             patience_counter += 1
             
-        if patience_counter >= patience:
+        if patience_counter >= patience:                                                     # Check if early stopping criteria (patience) is met
             print("Early stopping triggered")
             break
 
-        if metrics['accuracy'] > best_accuracy:
+        if metrics['accuracy'] > best_accuracy:                                              # Update best accuracy and best epoch if current accuracy is better
             best_accuracy = metrics['accuracy']
             best_accuracy_epoch = epoch + 1
 
-        conf_matrix = metrics['confusion_matrix']
-        class_report = metrics['classification_report']
+        conf_matrix = metrics['confusion_matrix']                                            # Extract confusion matrix report
+        class_report = metrics['classification_report']                                      # Extract  classification report
         class_names = [0, 1, 2]  
     
-        save_confusion_matrix(conf_matrix, class_names, output_dir[1], epoch, model_config.training.name)
-        save_classification_report(class_report, output_dir[1], epoch, model_config.training.name)
-        save_loss_plot(train_losses, val_losses, output_dir[0], epoch, model_config.training.name)
+        save_confusion_matrix(conf_matrix, class_names, output_dir[1], epoch, model_config.training.name)   # Save confusion matrix, classification report, and loss plot for the current epoch
+        save_classification_report(class_report, output_dir[1], epoch, model_config.training.name)          # Save confusion matrix, classification report, and loss plot for the current epoch
+        save_loss_plot(train_losses, val_losses, output_dir[0], epoch, model_config.training.name)          # Save confusion matrix, classification report, and loss plot for the current epoch
 
-        scheduler.step()
+        scheduler.step()                                                                    # Adjust the learning rate using the scheduler
+
 
 
 def define_and_run_RNN(config: yaml, device: torch.device, train_dataset: torch.utils.data.Dataset, val_dataset: torch.utils.data.Dataset):
@@ -244,10 +285,11 @@ def define_and_run_RNN(config: yaml, device: torch.device, train_dataset: torch.
     >>> val_dataset = MyValDataset()
     >>> define_and_run_RNN(config, device, train_dataset, val_dataset)
     """
-    model = Model.RNN(config.RNN.model.input_size, config.RNN.model.hidden_size, config.RNN.model.output_size, config.RNN.model.num_layers, config.RNN.model.dropout)
+    model = Model_DL.RNN(config.RNN.model.input_size, config.RNN.model.hidden_size, config.RNN.model.output_size, config.RNN.model.num_layers, config.RNN.model.dropout)
     optimizer = optim.Adam(model.parameters(), lr=config.RNN.training.learning_rate)
     scheduler = StepLR(optimizer, step_size=1, gamma=0.8)
     info_model(config.RNN)
+    #experiment.set_model_graph(str(model))  # Log the model graph to Comet.ml
     train_and_evaluate(model, train_dataset, val_dataset, config.RNN, device, optimizer, scheduler)
 
 def define_and_run_LSTM(config: yaml, device: torch.device, train_dataset: torch.utils.data.Dataset, val_dataset: torch.utils.data.Dataset):
@@ -292,11 +334,12 @@ def define_and_run_LSTM(config: yaml, device: torch.device, train_dataset: torch
     >>> val_dataset = MyValDataset()
     >>> define_and_run_LSTM(config, device, train_dataset, val_dataset)
     """
-    model = Model.LSTM(config.LSTM.model.input_size, config.LSTM.model.hidden_size, config.LSTM.model.output_size, config.LSTM.model.num_layers, config.LSTM.model.dropout, config.LSTM.model.bidirectional)
-    optimizer = optim.Adam(model.parameters(), lr=config.LSTM.training.learning_rate)
-    scheduler = StepLR(optimizer, step_size=1, gamma=0.8)
-    info_model(config.LSTM)
-    train_and_evaluate(model, train_dataset, val_dataset, config.LSTM, device, optimizer, scheduler)
+    model = Model_DL.LSTM(config.LSTM.model.input_size, config.LSTM.model.hidden_size, config.LSTM.model.output_size, config.LSTM.model.num_layers, config.LSTM.model.dropout, config.LSTM.model.bidirectional)  # Istance model LSTM passing iperparameters
+    optimizer = optim.Adam(model.parameters(), lr=config.LSTM.training.learning_rate)                                                                                                                            # Choice Adam optmizer
+    scheduler = StepLR(optimizer, step_size=1, gamma=0.8)                                                                                                                                                        # Choice scheduler StepLR
+    info_model(config.LSTM)                                                                                                                                                                                      # Print toscreen the model info    
+    #experiment.set_model_graph(str(model))                                                                                                                                                                      # Log the model graph to Comet.ml
+    train_and_evaluate(model, train_dataset, val_dataset, config.LSTM, device, optimizer, scheduler)                                                                                                             # Train and evaluate the model
 
 def define_and_run_GRU(config, device, train_dataset, val_dataset):
     """
@@ -340,23 +383,83 @@ def define_and_run_GRU(config, device, train_dataset, val_dataset):
     >>> val_dataset = MyValDataset()
     >>> define_and_run_GRU(config, device, train_dataset, val_dataset)
     """
-    model = Model.GRU(config.GRU.model.input_size, config.GRU.model.hidden_size, config.GRU.model.output_size, config.GRU.model.num_layers, config.GRU.model.dropout, config.GRU.model.bidirectional)
-    optimizer = optim.Adam(model.parameters(), lr=config.GRU.training.learning_rate)
-    scheduler = StepLR(optimizer, step_size=1, gamma=0.8)
-    info_model(config.GRU)
-    train_and_evaluate(model, train_dataset, val_dataset, config.GRU, device, optimizer, scheduler)
+    model = Model_DL.GRU(config.GRU.model.input_size, config.GRU.model.hidden_size, config.GRU.model.output_size, config.GRU.model.num_layers, config.GRU.model.dropout, config.GRU.model.bidirectional)    # Istance model GRU passing iperparameters
+    optimizer = optim.Adam(model.parameters(), lr=config.GRU.training.learning_rate)                                                                                                                        # Choice Adam optmizer
+    scheduler = StepLR(optimizer, step_size=1, gamma=0.8)                                                                                                                                                   # Choice scheduler StepLR
+    info_model(config.GRU)                                                                                                                                                                                  # Print toscreen the model info                   
+    #experiment.set_model_graph(str(model))                                                                                                                                                                 # Log the model graph to Comet.ml
+    train_and_evaluate(model, train_dataset, val_dataset, config.GRU, device, optimizer, scheduler)                                                                                                         # Train and evaluate the model
 
 
+def main_DL(config: yaml, dir: list):
+    """
+    Main function for Deep Learning (DL) model training and evaluation.
 
+    Parameters
+    ----------
+    config : object
+        Configuration object loaded from a YAML file specifying model and data parameters.
+    dir : list
+        List containing directories for data and labels.
+
+    Returns
+    -------
+    None
+    """
+    train_dataset = HWDataset_DL(dir, 'train', config.data.pad_tr)          # Define training dataset
+    val_dataset = HWDataset_DL(dir, 'val', config.data.pad_tr)              # Define validation dataset
+    device = torch.device(config.data.device)                               # Define GPU device 
+    define_and_run_RNN(config, device, train_dataset, val_dataset)          # Define and run the RNN model (train and evaluate)
+    #define_and_run_LSTM(config, device, train_dataset, val_dataset)        # Define and run the LSTM model (train and evaluate)
+    #define_and_run_GRU(config, device, train_dataset, val_dataset)         # Define and run the GRU model (train and evaluate)
+    #experiment.end()                                                       # end experiment tracking by comet.ml
+
+def main_ML(config: yaml, dir: list):
+    """
+    Main function for Machine Learning (ML) model training and test.
+
+    Parameters
+    ----------
+    config : object
+        Configuration object loaded from a YAML file specifying model and data parameters.
+    dir : list
+        List containing directories for data and labels.
+
+    Returns
+    -------
+    None
+    """
+    train = HW_Dataset_ML(dir, 'train')                                 # Preprocessing: Load and Compute the dataset: train
+    #val = HW_Dataset_ML(dir, 'val')
+    test = HW_Dataset_ML(dir, 'test')                                   # Preprocessing: Load and Compute the dataset: test
+
+    train_ds = train.get_ds()                                           # Get the ready train dataset for ML algoritms 
+    test_ds = test.get_ds()                                             # Get the ready train dataset for ML algoritms
+
+    X_train, y_train = train_ds.iloc[:, :-1], train_ds.iloc[:, -1]      # Separate data from the labels 
+    X_test, y_test = test_ds.iloc[:, :-1], test_ds.iloc[:, -1]          # Separate data from the labels
+
+    best_params_knn = KNN.grid_search(X_train, y_train)                 # Call the staticmethod to compute grid search for the KNN model
+    #best_params_svm = SVM.grid_search(X_train, y_train)                # Call the staticmethod to compute grid search for the KNN model
+
+
+    knn = KNN(**best_params_knn)                                        # Implement the grid search iper-parameter and istantiate the model KNN
+    knn.train(X_train, y_train)                                         # Train the KNN model
+    knn.evaluate(X_test, y_test, 'KNN')                                 # Eval the KNN model
+
+    ##svm = SVM(**best_params_svm)                                      # Implement the grid search iper-parameter and istantiate the model SVM
+    # svm = SVM()
+    # svm.train(StandardScaler().fit_transform(X_train), y_train)       # Train the KNN model
+    # svm.evaluate(StandardScaler().fit_transform(X_test), y_test, 'SVM')   # Eval the KNN model
+
+    
 if __name__ == '__main__':
     config = load_config(os.path.join(os.path.dirname(__file__), 'config', 'config_RNN.yaml'))
     dir = [config.data.data_dir, config.data.label_dir]
-    train_dataset = HWDataset_DL(dir, 'train', config.data.pad_tr)
-    val_dataset = HWDataset_DL(dir, 'val', config.data.pad_tr)
-    device = torch.device(config.data.device)
-    # # #define_and_run_RNN(config, device, train_dataset, val_dataset)
-    define_and_run_LSTM(config, device, train_dataset, val_dataset)
-    # # #define_and_run_GRU(config, device, train_dataset, val_dataset)
+    main_DL(config, dir)
+    #main_ML(config, dir)
+
+
 
 
 

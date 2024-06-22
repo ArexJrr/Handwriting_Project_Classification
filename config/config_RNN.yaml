@@ -12,7 +12,7 @@ data:
 RNN:
   training:
     name: RNN
-    epochs: 30
+    epochs: 10
     batch_size: 16
     learning_rate: 0.001
     optimizer: adam
@@ -23,14 +23,14 @@ RNN:
   model:
     input_size: 16
     output_size: 3
-    hidden_size: 512
+    hidden_size: 128
     num_layers: 2
     dropout: 0.2
 
 LSTM:
   training:
     name: LSTM
-    epochs: 30
+    epochs: 10
     batch_size: 16
     learning_rate: 0.001
     optimizer: adam
@@ -49,7 +49,7 @@ LSTM:
 GRU:
   training:
     name: GRU
-    epochs: 30
+    epochs: 10
     batch_size: 16
     learning_rate: 0.001
     optimizer: adam
@@ -61,7 +61,7 @@ GRU:
   model:
     input_size: 16
     output_size: 3
-    hidden_size: 256
+    hidden_size: 32
     num_layers: 2
     dropout: 0.2
     bidirectional: false
