@@ -180,8 +180,8 @@ def print_confusion_matrix(matrix: sklearn.metrics.confusion_matrix, class_names
     -------
     None
     """
-    print("[i] Confusion Matrix")
-    print()    
+    print()
+    print("[i] Confusion Matrix")    
     header = "Pred/Actual  " + "  ".join(f"{name:<8}" for name in class_names)              # Create header row with class names
     print(header)
     print("_" * len(header))                                                                # Just a style ;)   

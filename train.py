@@ -68,7 +68,7 @@ def info_model(config: yaml):
     >>> config.model = Config.Model()
     >>> info_model(config)
     ________Model[i]________
-    [i] Model Name: CNN 
+    [i] Model Name: RNN 
     [i] Epochs: 10
     [i] Input size: 224
     [i] Hidden size: 128

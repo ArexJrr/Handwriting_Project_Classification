@@ -24,7 +24,6 @@ Created on Tue May 21 01:43 CET 2024
 
 @author: andreapietro.arena@unikorestudent.it
 
-Some description
 """
 
 class BaseDataset(ABC):
@@ -101,7 +100,7 @@ class BaseDataset(ABC):
         self.config = load_config(os.path.join(os.path.dirname(__file__), '..', 'config', 'config_RNN.yaml'))      # Load the config from yaml file
         self.paths = paths                                                                  # Main path where the data folders for each subject are located.
         self.type_ds = type_ds                                                              # Type of dataset to be created (useful for train, validation, test split).
-        print("________ Datasets[i] ________")        #how to check istance                              # Print information about the dataset
+        print("________ Datasets[i] ________")                                              # Print information about the dataset
         self.list_valid_subjects, self.max_len_series = self.chk_csv_data(self.paths[0])    # Call chk_csv_data function to get all valid subject folder paths (containing tasks) and maximum series length.
         self.list_ofsubject = self.select_sub_ds(self.type_ds)                              # Use select_sub_ds function for splitting the data.
         self.data_files = self.data_filecsv_path()                                          # Call data_filecsv_path function to get the absolute paths of the CSV files for the specified dataset type.
@@ -557,10 +556,12 @@ class HW_Dataset_ML(BaseDataset):
         datasetf = pd.read_csv(first_csv_file, sep=',', names=range(21))                        # Read the csv list file with percentage operation index to return from first file when the last file is just processed
         list_columns_name = datasetf.iloc[0]                                                    # Get the column names from the first ds row
         datasetf.columns = list_columns_name                                                    # Remove the first row from dataset
-        list_columns_name = datasetf.iloc[0, 1:-4].drop(['Sequence', 'TimestampRaw']).tolist()                  # Drop unuseful coluns data
+        list_columns_name = datasetf.iloc[0, 1:-4].drop(['Sequence', 'TimestampRaw']).tolist()  # Drop unuseful coluns data
         headers = ['SubjectID', 'TaskID']                                                       # Define the headers
+        
         for column in list_columns_name:                                                        # For each column in list of columns
             headers.extend([f'mean_{column}', f'std_{column}'])                                 # Create new column for each column from the original dataset the new columns in the new dataset (for each column create mean and standard deviation columns feature)
+        
         headers.append('Label')                                                                 # Last column are the label
         dataset_ML = pd.DataFrame(columns=headers)                                              # Set the new columns name
 
@@ -572,15 +573,15 @@ class HW_Dataset_ML(BaseDataset):
             list_columns_name = dataset.iloc[0]                                                 # Set the 1st row to the list columns
             dataset = dataset[1:]                                                               # Remove the first row from dataset data file 
             dataset.columns = list_columns_name                                                 # Associate the column names to the column of dataset   
-            dataset = dataset.iloc[:, 1:-4].drop(columns=['Sequence', 'TimestampRaw'])                          # Drop specific columns
+            dataset = dataset.iloc[:, 1:-4].drop(columns=['Sequence', 'TimestampRaw'])          # Drop specific columns
             dataset['Phase'] = LabelEncoder().fit_transform(dataset['Phase'])                   # Using LabelEncoder to trasform the Categorical Feature to Numerical format
             dataset = dataset.astype(int)                                                       # Convert dataset to int
             mean_values = dataset.mean().round(3)                                               # Compute mean
             std_values = dataset.std().round(3)                                                 # Compute standard deviation
             new_row_values = []                                                                 # Initialize new list values
-
             new_row_values.append(subject_code)                                                 # Append to the list the subject code
             new_row_values.append(task_id)                                                      # Append to the list the task id
+            
             for column in dataset.columns:                                                      # For each column in dataset.column
                 new_row_values.append(mean_values[column])                                      # Append to the list the mean values
                 new_row_values.append(std_values[column])                                       # Append to the list the std values

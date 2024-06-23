@@ -16,7 +16,6 @@ Created on Thu May 23 18:17 CET 2024
 
 @author: andreapietro.arena@unikorestudent.it
 
-Some description
 """
 
 #|----------------------------------------------------------------
@@ -184,7 +183,7 @@ class Model_DL(ABC):
             h0 = torch.zeros(self.lstm.num_layers * num_directions, x.size(0), self.lstm.hidden_size).to(x.device)      # Initialize hidden state with zeros.
             c0 = torch.zeros(self.lstm.num_layers * num_directions, x.size(0), self.lstm.hidden_size).to(x.device)      # Initialize cell state with zeros.
             out, _ = self.lstm(x, (h0, c0))                                                                             # Perform LSTM forward pass
-            out = self.dropout(out) #if not is_validation else out                                                      # Apply dropout.
+            out = self.dropout(out)                                                                                     # Apply dropout.
             out = self.fc(out[:, -1, :])                                                                                # Apply the fully connected layer on the last time step.
             return out
         
